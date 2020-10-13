@@ -9,8 +9,11 @@ import { guardType } from "./utils";
 import { TransactionPayload } from "./transactionPayload";
 import * as errors from "./errors";
 import { TypedEvent } from "./events";
-import keccak from "keccak";
 import { TransactionWatcher } from "./transactionWatcher";
+import { IMarshalizer } from "./hashing/marshalizer";
+import { IHasher } from "./hashing/hasher";
+import { Blake2BHasher } from "./hashing/blake2bHasher";
+import { JsonMarshalizer } from "./hashing/jsonMarshalizer";
 
 const TRANSACTION_VERSION = new TransactionVersion(1);
 
@@ -88,7 +91,10 @@ export class Transaction implements ISignable {
         this.sender = signedBy;
 
         this.onSigned.emit({ transaction: this, signedBy: signedBy });
-        this.hash = TransactionHash.compute(this);
+                
+        let hasher = new Blake2BHasher();
+        let marshalizer = new JsonMarshalizer();
+        this.hash = TransactionHash.compute(this,marshalizer,hasher);
     }
 
     async send(provider: IProvider): Promise<TransactionHash> {
@@ -157,11 +163,9 @@ export class TransactionHash {
         return this.hash;
     }
 
-    static compute(transaction: Transaction): TransactionHash {
-        // TODO: Fix this, to use the actual algorithm, not a dummy one.
-        let dummyData = `this!is!not!the!real!hash!${JSON.stringify(transaction)}`;
-        let buffer = Buffer.from(dummyData);
-        let hash = keccak("keccak256").update(buffer).digest();
+    static compute(transaction: Transaction,marshalizer: IMarshalizer, hasher: IHasher): TransactionHash {
+        let transactionAsString = marshalizer.marshalize(transaction);
+        let hash = hasher.compute(transactionAsString);
         return new TransactionHash(hash.toString("hex"));
     }
 }

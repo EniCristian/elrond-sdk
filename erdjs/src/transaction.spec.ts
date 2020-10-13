@@ -12,6 +12,7 @@ import { TransactionPayload } from "./transactionPayload";
 import { ProxyProvider } from "./proxyProvider";
 import { NetworkConfig } from "./networkConfig";
 import { Balance } from "./balance";
+import { Signature } from "./signature";
 
 
 describe("test transaction", () => {
@@ -62,4 +63,16 @@ describe("test transaction", () => {
         console.log(JSON.stringify(await transactionOne.simulate(localTestnet), null, 4));
         console.log(JSON.stringify(await transactionTwo.simulate(localTestnet), null, 4));
     });
+    
+    it("should set the hash", async () => {
+        let transactionOne = new Transaction({
+            data: new TransactionPayload("helloWorld"),
+            gasLimit: undefined,
+            nonce: new Nonce(42)
+        });
+        let dummySignature = new Signature();
+        transactionOne.applySignature(dummySignature, aliceAddress);
+        assert.isNotNull(transactionOne.hash);
+        assert.isNotEmpty(transactionOne.hash);
+    });   
 });
