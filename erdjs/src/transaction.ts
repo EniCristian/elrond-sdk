@@ -10,10 +10,9 @@ import { TransactionPayload } from "./transactionPayload";
 import * as errors from "./errors";
 import { TypedEvent } from "./events";
 import { TransactionWatcher } from "./transactionWatcher";
-import { IMarshalizer } from "./hashing/marshalizer";
-import { IHasher } from "./hashing/hasher";
-import { Blake2BHasher } from "./hashing/blake2bHasher";
-import { JsonMarshalizer } from "./hashing/jsonMarshalizer";
+import { IMarshalizer, ProtoMarhalizer } from "./hashing/marshalizer";
+import { Blake2BHasher, IHasher } from "./hashing/hasher";
+import { TxMessage } from "./proto";
 
 const TRANSACTION_VERSION = new TransactionVersion(1);
 
@@ -91,10 +90,10 @@ export class Transaction implements ISignable {
         this.sender = signedBy;
 
         this.onSigned.emit({ transaction: this, signedBy: signedBy });
-                
+
         let hasher = new Blake2BHasher();
-        let marshalizer = new JsonMarshalizer();
-        this.hash = TransactionHash.compute(this,marshalizer,hasher);
+        let marshalizer = new ProtoMarhalizer<Transaction>(TxMessage);
+        this.hash = TransactionHash.compute(this, marshalizer, hasher);
     }
 
     async send(provider: IProvider): Promise<TransactionHash> {
@@ -163,7 +162,7 @@ export class TransactionHash {
         return this.hash;
     }
 
-    static compute(transaction: Transaction,marshalizer: IMarshalizer, hasher: IHasher): TransactionHash {
+    static compute(transaction: Transaction, marshalizer: IMarshalizer<Transaction>, hasher: IHasher): TransactionHash {
         let transactionAsString = marshalizer.marshalize(transaction);
         let hash = hasher.compute(transactionAsString);
         return new TransactionHash(hash.toString("hex"));

@@ -1,12 +1,19 @@
+import keccak from "keccak";
+
 export interface IHasher {
-    compute(message: string): Buffer;
+    compute(message: Buffer): Buffer;
 }
 
-export abstract class Hasher implements Hasher {
-    public compute(message: string): Buffer {
-        var input = Buffer.from(message)
-        return this.getComputedValue(input);
+export class KeccakHasher implements IHasher {
+    compute(inputBuffer: Buffer): Buffer {
+       return keccak("keccak256").update(inputBuffer).digest();
     }
+}
 
-    protected abstract getComputedValue(inputBuffer: Buffer): Buffer;
+export class Blake2BHasher implements IHasher {
+    private readonly hasher = require('blake2b');
+
+    compute(inputBuffer: Buffer): Buffer {
+       return this.hasher(64).update(inputBuffer).digest();
+    }
 }
